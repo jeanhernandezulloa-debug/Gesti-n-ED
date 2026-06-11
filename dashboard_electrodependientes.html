@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interrupciones Clientes Electrodependientes — Junio 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface2: #f0f1f4;
+    --border: rgba(0,0,0,0.09);
+    --text: #1a1b1e;
+    --text2: #6b6f7a;
+    --text3: #9ca0ab;
+    --accent: #1a56db;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111318;
+      --surface: #1c1f26;
+      --surface2: #24272f;
+      --border: rgba(255,255,255,0.09);
+      --text: #e8eaf0;
+      --text2: #9095a0;
+      --text3: #5a5f6e;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; }
+  a { color: var(--accent); }
+
+  /* Layout */
+  .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: var(--text2); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; background: #e8f0fe; color: #1a56db; margin-left: 8px; vertical-align: middle; }
+  @media (prefers-color-scheme: dark) { .badge { background: #1a3a7a; color: #93b4f7; } }
+
+  /* Filters */
+  .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 1.75rem; padding: 14px 16px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); }
+  .filters label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .filters select { font-size: 13px; padding: 5px 10px; border-radius: 6px; border: 0.5px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; outline: none; }
+  .filters select:focus { border-color: var(--accent); }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 1.75rem; }
+  @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }
+  .kpi-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .kpi-val { font-size: 26px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; line-height: 1.1; }
+  .kpi-sub { font-size: 11px; color: var(--text2); margin-top: 5px; }
+  .kpi-accent { border-top: 3px solid var(--accent); }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; }
+  .card-full { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .card-sub { font-size: 11px; color: var(--text2); margin-bottom: 14px; }
+
+  /* Chart wrappers */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; font-size: 11px; color: var(--text2); }
+  .leg { display: flex; align-items: center; gap: 5px; }
+  .leg-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Bar chart (custom horizontal) */
+  .hbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .hbar-label { width: 130px; flex-shrink: 0; font-size: 12px; color: var(--text2); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hbar-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 18px; overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 7px; min-width: 40px; transition: width 0.4s ease; }
+  .hbar-val { font-size: 11px; font-weight: 500; color: #fff; white-space: nowrap; }
+  .hbar-val.dark-text { color: var(--text); }
+
+  /* Section title */
+  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3); margin: 2rem 0 1rem; }
+
+  /* Medidor table */
+  .med-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .med-table th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; padding: 6px 10px; border-bottom: 0.5px solid var(--border); }
+  .med-table td { padding: 8px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); }
+  .med-table tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
+  .pill-green { background: #d1fae5; color: #065f46; }
+  .pill-amber { background: #fef3c7; color: #92400e; }
+  .pill-red { background: #fee2e2; color: #991b1b; }
+  @media (prefers-color-scheme: dark) {
+    .pill-green { background: #064e3b; color: #6ee7b7; }
+    .pill-amber { background: #78350f; color: #fcd34d; }
+    .pill-red { background: #7f1d1d; color: #fca5a5; }
+  }
+
+  /* Footer */
+  .footer { margin-top: 3rem; font-size: 11px; color: var(--text3); text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>Interrupciones de suministro <span class="badge">Electrodependientes</span></h1>
+    <p>Región de Valparaíso · Junio 2026 · Fuente: Operaciones_electrodependientes_062026.xlsx</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <label>Zona:</label>
+    <select id="zonaFilter" onchange="updateDashboard()">
+      <option value="todas">Todas las zonas</option>
+      <option value="Valparaíso">Valparaíso</option>
+      <option value="Marga Marga">Marga Marga</option>
+      <option value="Costa">Costa</option>
+      <option value="Quillota">Quillota</option>
+      <option value="Aconcagua">Aconcagua</option>
+      <option value="San Antonio">San Antonio</option>
+    </select>
+    <label>Equipo de respaldo:</label>
+    <select id="equipoFilter" onchange="updateDashboard()">
+      <option value="todos">Todos</option>
+      <option value="Equipo De Respaldo">Equipo de respaldo</option>
+      <option value="Pendiente De Entrega">Pendiente de entrega</option>
+      <option value="Rechaza Equipo Sec">Rechaza equipo sec.</option>
+    </select>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Total clientes</div>
+      <div class="kpi-val" id="kpiClientes">1.361</div>
+      <div class="kpi-sub">con interrupción registrada</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Horas totales</div>
+      <div class="kpi-val" id="kpiHrsTotal">17.683</div>
+      <div class="kpi-sub" id="kpiHrsSub">acumuladas en el período</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Promedio por cliente</div>
+      <div class="kpi-val" id="kpiHrsMean">13,0 hrs</div>
+      <div class="kpi-sub">mediana: 9,4 hrs</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Causa principal</div>
+      <div class="kpi-val" style="font-size:18px">Terceros</div>
+      <div class="kpi-sub">9.522 hrs · 53,8% del total</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Zona bars + Equipo donut -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Horas totales por zona</div>
+      <div class="card-sub">Suma acumulada de horas de interrupción</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chartZona" role="img" aria-label="Horas totales de interrupción por zona"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Clientes por zona</div>
+      <div class="card-sub">Cantidad de NIS afectados por área geográfica</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chartClientesZona" role="img" aria-label="Clientes por zona"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Causas -->
+  <div class="card-full">
+    <div class="card-title">Horas de interrupción por causa</div>
+    <div class="card-sub">Contribución de cada factor al total acumulado de horas</div>
+    <div id="causasChart"></div>
+  </div>
+
+  <!-- Row 2: Top alimentadores + Histograma -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Top 15 alimentadores</div>
+      <div class="card-sub">Mayor acumulado de horas de interrupción</div>
+      <div id="topAlimChart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Distribución por rango de horas</div>
+      <div class="card-sub">Cantidad de clientes según tiempo interrumpido</div>
+      <div class="chart-wrap" style="height:300px">
+        <canvas id="chartHist" role="img" aria-label="Histograma de horas de interrupción por rangos">Distribución de clientes por rango de horas.</canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Equipo respaldo + BT vs MT -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Equipo de respaldo por zona</div>
+      <div class="card-sub">Distribución de estado de equipo asignado</div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="chartEquipo" role="img" aria-label="Equipo de respaldo por zona"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Interrupciones BT vs MT por zona</div>
+      <div class="card-sub">Horas en baja y media tensión</div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="chartBTMT" role="img" aria-label="Horas BT vs MT por zona"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medidor table -->
+  <div class="card-full">
+    <div class="card-title">Tipo de medidor por zona</div>
+    <div class="card-sub">Cantidad de clientes con NARI-SMMC, Sin medidor y GEN SGM</div>
+    <table class="med-table">
+      <thead>
+        <tr>
+          <th>Zona</th>
+          <th>Clientes</th>
+          <th>NARI - SMMC</th>
+          <th>Sin medidor</th>
+          <th>GEN SGM</th>
+          <th>% con medidor</th>
+        </tr>
+      </thead>
+      <tbody id="medTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    Dashboard generado automáticamente · Datos: Operaciones_electrodependientes_062026.xlsx · 1.361 clientes · Junio 2026
+  </div>
+</div>
+
+<script>
+// ─── Full dataset (1 entry per zona) ──────────────────────────────────────────
+const ZONAS_DATA = [
+  { zona:"Aconcagua", n:158, hrs:1988.85, mean:12.59, ext:78.4,  dx:232.8, nat:58.2,  veg:207.4, op:524.8, ter:847.2,  dom:40.1,  bt:369.8, mt:1582.3, equipo:{r:154,p:3,rec:1},  nari:98,  sinM:60, gen:0 },
+  { zona:"Costa",     n:258, hrs:3308.78, mean:12.82, ext:91.3,  dx:222.4, nat:89.2,  veg:287.5, op:712.3, ter:1847.3, dom:58.7,  bt:891.2, mt:2374.6, equipo:{r:243,p:12,rec:3},  nari:179, sinM:79, gen:0 },
+  { zona:"Marga Marga",n:312,hrs:2527.33, mean:8.10,  ext:0,     dx:412.1, nat:48.6,  veg:521.3, op:894.2, ter:618.5,  dom:32.6,  bt:721.4, mt:1784.9, equipo:{r:294,p:14,rec:4},  nari:199, sinM:112,gen:1 },
+  { zona:"Quillota",  n:183, hrs:3269.32, mean:17.87, ext:68.2,  dx:228.1, nat:112.4, veg:418.6, op:643.7, ter:1719.4, dom:78.9,  bt:798.3, mt:2424.1, equipo:{r:166,p:12,rec:5},  nari:122, sinM:61, gen:0 },
+  { zona:"San Antonio",n:130,hrs:2167.27, mean:16.67, ext:70.7,  dx:268.9, nat:109.2, veg:207.5, op:377.1, ter:1125.2, dom:8.7,   bt:412.7, mt:1726.8, equipo:{r:122,p:4,rec:4},   nari:88,  sinM:41, gen:1 },
+  { zona:"Valparaíso",n:320, hrs:4421.85, mean:13.82, ext:0,     dx:263.5, nat:22.3,  veg:224.7, op:765.4, ter:3064.2, dom:81.7,  bt:1132.9,mt:3242.8, equipo:{r:300,p:12,rec:8},  nari:173, sinM:146,gen:1 }
+];
+
+const TOP_ALIM = [
+  ["La Pólvora",673.26],["San Juan",630.60],["Lliu Lliu",604.84],["Tomás Ramos",588.78],
+  ["Barón",544.95],["Cartagena",521.96],["Glorias Navales",497.88],["Alejandro Navarrete",413.89],
+  ["Salinas",402.99],["Placilla",352.34],["Boco",346.11],["Nogales",343.00],
+  ["Agua Santa",339.17],["Pacífico",335.76],["Sauce",335.71]
+];
+
+const ZONE_COLORS   = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#db2777'];
+const CAUSE_COLORS  = ['#3b82f6','#6366f1','#10b981','#84cc16','#f59e0b','#ef4444','#ec4899'];
+const EQUIPO_COLORS = ['#2563eb','#f59e0b','#ef4444'];
+
+let charts = {};
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function isDark(){ return matchMedia('(prefers-color-scheme: dark)').matches; }
+function gridColor(){ return isDark()?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.06)'; }
+function tickColor(){ return isDark()?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.4)'; }
+
+function getFilteredData(){
+  const z = document.getElementById('zonaFilter').value;
+  const e = document.getElementById('equipoFilter').value;
+  let data = z === 'todas' ? [...ZONAS_DATA] : ZONAS_DATA.filter(d=>d.zona===z);
+  return { data, zonaFilter: z, equipoFilter: e };
+}
+
+function updateDashboard(){
+  const { data, zonaFilter, equipoFilter } = getFilteredData();
+
+  // KPIs
+  const totalN   = data.reduce((a,d)=>a+d.n,0);
+  const totalHrs = data.reduce((a,d)=>a+d.hrs,0);
+  const meanHrs  = totalHrs/totalN;
+  document.getElementById('kpiClientes').textContent   = totalN.toLocaleString('es-CL');
+  document.getElementById('kpiHrsTotal').textContent   = Math.round(totalHrs).toLocaleString('es-CL');
+  document.getElementById('kpiHrsMean').textContent    = meanHrs.toFixed(1)+' hrs';
+
+  const zonas  = data.map(d=>d.zona);
+  const colors = zonas.map((_,i)=>ZONE_COLORS[i % ZONE_COLORS.length]);
+
+  // Chart: Horas por zona
+  destroyChart('zona');
+  charts.zona = new Chart(document.getElementById('chartZona'),{
+    type:'bar',
+    data:{ labels:zonas, datasets:[{ data:data.map(d=>Math.round(d.hrs)), backgroundColor:colors, borderRadius:5, borderSkipped:false }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.raw.toLocaleString('es-CL')+' hrs'}} }, scales:{ x:{ticks:{color:tickColor(),font:{size:11}},grid:{display:false}}, y:{ticks:{color:tickColor(),font:{size:11},callback:v=>v.toLocaleString('es-CL')},grid:{color:gridColor()}} } }
+  });
+
+  // Chart: Clientes por zona (horizontal bar)
+  destroyChart('clientes');
+  charts.clientes = new Chart(document.getElementById('chartClientesZona'),{
+    type:'bar',
+    data:{ labels:zonas, datasets:[{ data:data.map(d=>d.n), backgroundColor:colors, borderRadius:5, borderSkipped:false }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.raw+' clientes'}} }, scales:{ x:{ticks:{color:tickColor(),font:{size:11}},grid:{color:gridColor()}}, y:{ticks:{color:tickColor(),font:{size:11}},grid:{display:false}} } }
+  });
+
+  // Causas horizontal bars
+  const causeNames = ['Terceros','Op./Mtto./Red','Vegetación','Dx Prog.','Nat./Clima','Externas','DOM'];
+  const causeKeys  = ['ter','op','veg','dx','nat','ext','dom'];
+  const causeTotals = causeKeys.map(k=>data.reduce((a,d)=>a+d[k],0));
+  const maxC = Math.max(...causeTotals);
+  document.getElementById('causasChart').innerHTML = causeNames.map((n,i)=>{
+    const pct = maxC>0 ? (causeTotals[i]/maxC*100) : 0;
+    return `<div class="hbar-row">
+      <div class="hbar-label">${n}</div>
+      <div class="hbar-track">
+        <div class="hbar-fill" style="width:${pct.toFixed(1)}%;background:${CAUSE_COLORS[i]}">
+          <span class="hbar-val">${causeTotals[i].toFixed(0)} hrs</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Top alimentadores
+  const maxA = TOP_ALIM[0][1];
+  document.getElementById('topAlimChart').innerHTML = TOP_ALIM.map(([n,v],i)=>{
+    const pct = v/maxA*100;
+    return `<div class="hbar-row">
+      <div class="hbar-label">${n}</div>
+      <div class="hbar-track">
+        <div class="hbar-fill" style="width:${pct.toFixed(1)}%;background:#2563eb">
+          <span class="hbar-val">${v.toFixed(0)} hrs</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Histogram (static full dataset)
+  destroyChart('hist');
+  charts.hist = new Chart(document.getElementById('chartHist'),{
+    type:'bar',
+    data:{ labels:['0–5 hrs','5–10 hrs','10–20 hrs','20–30 hrs','30–50 hrs','50–100 hrs','>100 hrs'], datasets:[{ data:[452,256,353,175,98,26,1], backgroundColor:'#7c3aed', borderRadius:4 }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.raw+' clientes'}} }, scales:{ x:{ticks:{color:tickColor(),font:{size:11},maxRotation:30},grid:{display:false}}, y:{ticks:{color:tickColor(),font:{size:11}},grid:{color:gridColor()}} } }
+  });
+
+  // Equipo respaldo stacked
+  destroyChart('equipo');
+  charts.equipo = new Chart(document.getElementById('chartEquipo'),{
+    type:'bar',
+    data:{ labels:zonas, datasets:[
+      { label:'Equipo de respaldo',  data:data.map(d=>d.equipo.r),   backgroundColor:'#2563eb', borderRadius:0, stack:'s' },
+      { label:'Pendiente de entrega',data:data.map(d=>d.equipo.p),   backgroundColor:'#f59e0b', borderRadius:0, stack:'s' },
+      { label:'Rechaza equipo sec.', data:data.map(d=>d.equipo.rec), backgroundColor:'#ef4444', borderRadius:[4,4,0,0], stack:'s' }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true, position:'bottom', labels:{font:{size:11},color:tickColor(),boxWidth:10,padding:10}} }, scales:{ x:{ticks:{color:tickColor(),font:{size:11}},grid:{display:false},stacked:true}, y:{ticks:{color:tickColor(),font:{size:11}},grid:{color:gridColor()},stacked:true} } }
+  });
+
+  // BT vs MT
+  destroyChart('btmt');
+  charts.btmt = new Chart(document.getElementById('chartBTMT'),{
+    type:'bar',
+    data:{ labels:zonas, datasets:[
+      { label:'Baja tensión (BT)',  data:data.map(d=>Math.round(d.bt)), backgroundColor:'#059669', borderRadius:0, stack:'s' },
+      { label:'Media tensión (MT)', data:data.map(d=>Math.round(d.mt)), backgroundColor:'#2563eb', borderRadius:[4,4,0,0], stack:'s' }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true, position:'bottom', labels:{font:{size:11},color:tickColor(),boxWidth:10,padding:10}} }, scales:{ x:{ticks:{color:tickColor(),font:{size:11}},grid:{display:false},stacked:true}, y:{ticks:{color:tickColor(),font:{size:11},callback:v=>v.toLocaleString('es-CL')},grid:{color:gridColor()},stacked:true} } }
+  });
+
+  // Medidor table
+  const MEDIDOR = [
+    {zona:'Aconcagua',n:158,nari:98, sinM:60, gen:0},
+    {zona:'Costa',    n:258,nari:179,sinM:79, gen:0},
+    {zona:'Marga Marga',n:312,nari:199,sinM:112,gen:1},
+    {zona:'Quillota', n:183,nari:122,sinM:61, gen:0},
+    {zona:'San Antonio',n:130,nari:88,sinM:41,gen:1},
+    {zona:'Valparaíso',n:320,nari:173,sinM:146,gen:1}
+  ];
+  const filteredMed = zonaFilter==='todas' ? MEDIDOR : MEDIDOR.filter(d=>d.zona===zonaFilter);
+  document.getElementById('medTableBody').innerHTML = filteredMed.map(d=>{
+    const pctMed = ((d.nari+d.gen)/d.n*100).toFixed(1);
+    const pillClass = parseFloat(pctMed)>=70?'pill-green': parseFloat(pctMed)>=50?'pill-amber':'pill-red';
+    return `<tr>
+      <td>${d.zona}</td>
+      <td>${d.n}</td>
+      <td>${d.nari}</td>
+      <td>${d.sinM}</td>
+      <td>${d.gen}</td>
+      <td><span class="pill ${pillClass}">${pctMed}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+updateDashboard();
+</script>
+</body>
+</html>
