@@ -1,2 +1,2 @@
-# Gesti-n-ED
+# GESTION ELECTRODEPENDIENTES
 Gestión ED
